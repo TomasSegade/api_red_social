@@ -1,0 +1,2 @@
+start cmd.exe /k "C: && cd Program Files && cd MongoDB && cd Server && cd 6.0\bin && mongod.exe --dbpath D:/data/db"
+start cmd.exe /k "cd D:\Tomas\Escritorio\proyectos\udemy_proyectos\api_rest_blog && npm start"
