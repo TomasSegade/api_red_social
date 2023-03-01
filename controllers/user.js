@@ -90,49 +90,84 @@ const login = (req, res) => {
 
     // Buscar en BBDD si existe
     User.findOne({ email: params.email })
-    //.select({"password": 0})
-    .exec((error, user) => {
-        if (error || !user) {
-            return res.status(400).json({
-                status: "error",
-                message: "No existe el usuario"
+        //.select({"password": 0})
+        .exec((error, user) => {
+            if (error || !user) {
+                return res.status(400).json({
+                    status: "error",
+                    message: "No existe el usuario"
+                });
+            };
+
+            // Comprobar su contraseña
+            const pwd = bcrypt.compareSync(params.password, user.password);
+
+            if (!pwd) {
+                return res.status(400).json({
+                    status: "error",
+                    message: "Contraseña invalida"
+                });
+            };
+
+            // Conseguir Token
+            const token = jwt.createToken(user);
+
+            // Datos usuario
+            return res.status(200).json({
+                status: "success",
+                message: "Inicio de sesion exitoso",
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    nick: user.nick,
+
+                },
+                token
             });
-        };
 
-        // Comprobar su contraseña
-        const pwd = bcrypt.compareSync(params.password, user.password);
 
-        if(!pwd){
-            return res.status(400).json({
-                status: "error",
-                message: "Contraseña invalida"
-            });
-        };
-
-        // Conseguir Token
-        const token = jwt.createToken(user);
-
-        // Datos usuario
-        return res.status(200).json({
-            status: "success",
-            message: "Inicio de sesion exitoso",
-            user: {
-                id: user._id,
-                name: user.name,
-                nick: user.nick,
-
-            },
-            token
         });
-
-
-    });
 
 
 
 };
 
+
+const profile = (req, res) => {
+    // Recibir parametro de id de usuario por url
+    const id = req.params.id;
+
+    // Consulta para sacar datos de usuario
+    User.findById(id)
+        .select({ password: 0, role: 0 })
+        .exec((error, userProfile) => {
+
+            if (error || !userProfile) {
+                return res.status(400).json({
+                    status: "error",
+                    message: "El usuario no existe o hay un error"
+                });
+            };
+            // Devolver resultado, posteriormente devolveremos la info de follows
+            return res.status(200).json({
+                status: "success",
+                user: userProfile
+            });
+        });
+
+}
+
+const list = (req, res) => {
+
+    return res.status(200).json({
+        status: "success",
+        message: "Ruta de listado de usuarios"
+    });
+}
+
+
 module.exports = {
     register,
-    login
+    login,
+    profile
 };
