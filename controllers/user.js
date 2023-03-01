@@ -3,6 +3,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("../services/jwt")
+const mongoosePagination = require("mongoose-pagination");
+const res = require("express/lib/response");
 
 // Registro de usuarios 
 
@@ -158,16 +160,130 @@ const profile = (req, res) => {
 }
 
 const list = (req, res) => {
+    // Controlar en que pagina estamos
+    let page = 1;
+    if (req.params.page) {
+        page = req.params.page;
+    }
+    page = parseInt(page);
 
-    return res.status(200).json({
-        status: "success",
-        message: "Ruta de listado de usuarios"
+    // Constulta con mongoose paginate
+    let itemsPerPage = 5;
+
+    User.find().sort('_id').paginate(page, itemsPerPage, (error, users, total) => {
+
+        if (error || !users) {
+
+            return res.status(404).json({
+                status: "error",
+                message: "error en la consulta",
+                error
+            });
+
+        }
+
+        // Devolver el resutlado (posteriormente info follow)
+        return res.status(200).json({
+            status: "success",
+            users,
+            page,
+            itemsPerPage,
+            total,
+            pages: Math.ceil(total / itemsPerPage)
+        });
+    })
+
+}
+
+
+const update = (req, res) => {
+    // Recoger info del usuario a actualizar
+    let userIdentity = req.user;
+    let userToUpdate = req.body;
+
+    // Eliminar campos sobrantes
+    delete userToUpdate.iat;
+    delete userToUpdate.exp;
+    delete userToUpdate.role;
+    delete userToUpdate.image;
+
+    // Comprobar si usuario ya existe
+
+    User.find({
+        $or: [
+            { email: userToUpdate.email.toLowerCase() },
+            { nick: userToUpdate.nick.toLowerCase() }
+        ]
+    }).exec(async (error, users) => {
+
+        if (error) {
+            return res.status(500).json({
+                status: "error",
+                message: "Error en la consulta"
+            });
+        };
+
+        let userIsset = false;
+        users.forEach(user => {
+            if (user && user._id != userIdentity.id) {
+                userIsset = true;
+            }
+        });
+
+        if (userIsset) {
+            return res.status(200).json({
+                status: "success",
+                message: "El usuario ya existe"
+            });
+
+        }
+
+        //  Cifrar la contraseña
+        if (userToUpdate.password) {
+            let pwd = await bcrypt.hash(userToUpdate.password, 10);
+            userToUpdate.password = pwd;
+        }
+
+        // Buscar y actualizar
+        try {
+            let userUpdate = await User.findByIdAndUpdate(userIdentity.id, userToUpdate, { new: true });
+
+
+            if (!userUpdated) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "Error al actualizar usuario"
+                });
+
+
+                // Devolver respuesta
+                return res.status(200).json({
+                    status: "success",
+                    message: "metodo actualizar usuario",
+                    user: userToUpdate
+                })
+            }
+
+        } catch (error) {
+            return res.status(500).json({
+                status: "error",
+                message: "error al actualizar"
+            })
+
+        }
+
+
+
+
     });
+
 }
 
 
 module.exports = {
     register,
     login,
-    profile
+    profile,
+    list,
+    update
 };

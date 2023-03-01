@@ -11,6 +11,10 @@ const UserSchema = Schema({
         type: String
     },
 
+    bio: {
+        type: String
+    },
+
     nick: {
         type: String,
         require: true
