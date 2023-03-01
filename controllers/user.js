@@ -5,8 +5,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("../services/jwt")
 const mongoosePagination = require("mongoose-pagination");
 const res = require("express/lib/response");
-
-// Registro de usuarios 
+const req = require("express/lib/request");
+const fs = require('fs');
 
 const register = (req, res) => {
     // Recoger datos de la peticion
@@ -157,7 +157,8 @@ const profile = (req, res) => {
             });
         });
 
-}
+};
+
 
 const list = (req, res) => {
     // Controlar en que pagina estamos
@@ -193,7 +194,7 @@ const list = (req, res) => {
         });
     })
 
-}
+};
 
 
 const update = (req, res) => {
@@ -277,6 +278,52 @@ const update = (req, res) => {
 
     });
 
+};
+
+
+const upload = (req, res) => {
+
+    // Recoger el fichero de la imagen y comprobar si existe
+    if (!req.file) {
+        return res.status(404).send({
+            status: "error",
+            message: "peticion no incluye la imagen"
+        });
+    }
+    // Conseguir el nombre del archivo
+    let image = req.file.originalName;
+
+    // ERROR ACA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    // Sacar la extencion del archivo
+    const imageSplit = image.split("\.");
+    const extension = imageSplit[1];
+
+    //comprobar si la extencion es correcta, sino borramos
+    if (extension != "png" && extension != "jpg" && extension != "jpeg" && extension != "gif") {
+        const filePath = req.file.path;
+        const fileDeleted = fs.unlinkSync(filePath);
+        return res.status(400).json({
+            status:"error",
+            message:"Extension del fichero invalida"
+        });
+    };
+
+    // Si es correcta guardar en base de datos
+
+
+    // Devolver respueta
+
+
+
+    return res.status(200).json({
+        status: "success",
+        message: "subida de imangenes",
+        user: req.user,
+        file: req.file,
+        files: req.files,
+        image
+    });
 }
 
 
@@ -285,5 +332,6 @@ module.exports = {
     login,
     profile,
     list,
-    update
+    update,
+    upload
 };
