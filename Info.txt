@@ -1,0 +1,1 @@
+el error al guardar archivo, es que la imagen contenia un . en su nombre lo cual no separaba bien el formato de imagen
